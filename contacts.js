@@ -1,96 +1,89 @@
-const fs = require("fs");
+const fs = require("fs/promises");
 const path = require("path");
+const contactsPath = path.join(__dirname, "/db/contacts.json");
+const shortid = require("shortid");
+require("colors");
 
-const contactsPath = path.resolve("./db/contacts.json");
+async function parsedContacts() {
+  try {
+    const data = await fs.readFile(contactsPath, "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    return console.error(error.message);
+  }
+}
 
-function listContacts() {
-  fs.readFile(contactsPath, "utf-8", (error, data) => {
-    if (error) {
-      return console.log(error);
-    }
-
-    const contacts = JSON.parse(data);
-    console.log("List of contacts: ");
+async function listContacts() {
+  try {
+    const contacts = await parsedContacts();
+    console.log("List of contacts:".magenta);
     console.table(contacts);
-  });
+    return contacts;
+  } catch (error) {
+    return console.error(error.message);
+  }
 }
 
-function getContactById(contactId) {
-  fs.readFile(contactsPath, "utf-8", (error, data) => {
-    if (error) {
-      return console.log(error);
-    }
+async function getContactById(contactId) {
+  try {
+    const contacts = await parsedContacts();
+    const contact = contacts.find(({ id }) => id === contactId);
 
-    const contacts = JSON.parse(data);
+    if (!contact) return console.error(`Contact with ID ${contactId} not found!`.red);
 
-    const contact = contacts.find((contact) => {
-      if (contact.id === contactId) {
-        console.log(`Get contact by ID ${contactId}:`);
-        console.table(contact);
-        return contact;
-      }
-    });
-
-    if (contact == null) {
-      console.log(`Contact with ID "${contactId}" not found!`);
-    }
-  });
+    console.log(`Contact with ID ${contactId}:`.magenta);
+    console.table(contact);
+    return contact;
+  } catch (error) {
+    return console.error(error.message);
+  }
 }
 
-function removeContact(contactId) {
-  fs.readFile(contactsPath, "utf-8", (error, data) => {
-    if (error) {
-      return console.log(error);
+async function removeContact(contactId) {
+  try {
+    const contacts = await parsedContacts();
+    const newContacts = contacts.filter(({ id }) => id !== contactId);
+
+    if (contacts.length === newContacts.length) {
+      return console.error(`Contact with ID ${contactId} not found!`.red);
     }
 
-    const contacts = JSON.parse(data);
-    const newContact = contacts.filter((contact) => contact.id !== contactId);
+    await fs.writeFile(contactsPath, JSON.stringify(newContacts, null, 2), "utf8");
 
-    if (newContact.length === contacts.length) {
-      console.log(`Contact with ID "${contactId}" don't removed! ID "${contactId}" not found!`);
-      return;
-    }
+    console.log("Contact deleted successfully! New list of contacts:".magenta);
+    console.table(newContacts);
 
-    console.log("Contact deleted successfully! New list of contacts: ");
-    console.table(newContact);
-
-    fs.writeFile(contactsPath, JSON.stringify(newContact), (error) => {
-      if (error) {
-        return console.log("error :", error);
-      }
-    });
-  });
+    return newContacts;
+  } catch (error) {
+    return console.error(error.message);
+  }
 }
 
-function addContact(name, email, phone) {
-  fs.readFile(contactsPath, "utf-8", (error, data) => {
-    if (error) {
-      return console.log(error);
-    }
+async function addContact(name, email, phone) {
+  try {
+    const contacts = await parsedContacts();
 
-    const contacts = JSON.parse(data);
+    if (contacts.find((contact) => contact.name.toLowerCase() === name.toLowerCase()))
+      return console.warn("This name already exists!".yellow);
 
-    contacts.push({
-      id: contacts.length + 1,
-      name: name,
-      email: email,
-      phone: phone,
-    });
+    if (contacts.find((contact) => contact.email === email))
+      return console.warn("This email already exists!".yellow);
 
-    console.log("Contacts added successfully! New lists of contacts: ");
-    console.table(contacts);
+    if (contacts.find((contact) => contact.phone === phone))
+      return console.warn("This phone already exists!".yellow);
 
-    fs.writeFile(contactsPath, JSON.stringify(contacts), (error) => {
-      if (error) {
-        return console.log(error);
-      }
-    });
-  });
+    const newContact = { id: shortid.generate(), name, email, phone };
+    const newContacts = [...contacts, newContact];
+
+    await fs.writeFile(contactsPath, JSON.stringify(newContacts, null, 2), "utf8");
+
+    console.log("Contact added successfully! New list of contacts:".magenta);
+    console.table(newContacts);
+
+    return newContacts;
+  } catch (error) {
+    return console.error(error.message);
+  }
 }
 
-module.exports = {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-};
+module.exports = { listContacts, getContactById, removeContact, addContact };
