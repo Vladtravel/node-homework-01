@@ -18,7 +18,6 @@ async function listContacts() {
     const contacts = await parsedContacts();
     console.log("List of contacts:".magenta);
     console.table(contacts);
-    return contacts;
   } catch (error) {
     return console.error(error.message);
   }
@@ -33,7 +32,6 @@ async function getContactById(contactId) {
 
     console.log(`Contact with ID ${contactId}:`.magenta);
     console.table(contact);
-    return contact;
   } catch (error) {
     return console.error(error.message);
   }
@@ -52,8 +50,6 @@ async function removeContact(contactId) {
 
     console.log("Contact deleted successfully! New list of contacts:".magenta);
     console.table(newContacts);
-
-    return newContacts;
   } catch (error) {
     return console.error(error.message);
   }
@@ -79,8 +75,6 @@ async function addContact(name, email, phone) {
 
     console.log("Contact added successfully! New list of contacts:".magenta);
     console.table(newContacts);
-
-    return newContacts;
   } catch (error) {
     return console.error(error.message);
   }
